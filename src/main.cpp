@@ -12,6 +12,8 @@
 
 #include "../include/graph.h"
 
+#define NUM_TRIALS 5
+
 // initialize the graph in main
 graph g;
 
@@ -63,7 +65,7 @@ int main(int argc, char* argv[]) {
     std::ofstream f;                    // result text file
     std::ostringstream result_filename; // result text file name
 
-    uint64_t execTime;                  // time in nanoseconds
+    double execTime;                    // time in nanoseconds
     struct timespec tick, tock;         // for measuring runtime
 
     pthread_attr_t attr;
@@ -105,25 +107,28 @@ int main(int argc, char* argv[]) {
     if (parallel) {
         std::cout << "solving SSSP from node " << (int)src << " via parallel Bellman-Ford algorithm..." << std::endl;
         // main computation for SSSP; measure runtime here
- 	clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
-	// ---------------- experiment below ----------------
-        __itt_resume(); // for VTune
+        clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
+        // ---------------- experiment below ----------------
 
-        // this loop has to stay serial
-        for (int i = 0; i < num_threads; ++i) {
-            // create threads 0, 1, 2, ..., numThreads (round robin)
-            short_names[i] = i;
-            pthread_create(&handles[i], &attr, Relax, &short_names[i]);
-        }
-        // join with threads when they're done
-        for (int i = 0; i < num_threads; ++i) {
-            pthread_join(handles[i], NULL);
+        // try multiple times and get the average runtime
+        for (int t = 0; t < NUM_TRIALS; ++t) {
+            __itt_resume(); // for VTune
+            // this loop has to stay serial
+            for (int i = 0; i < num_threads; ++i) {
+                // create threads 0, 1, 2, ..., numThreads (round robin)
+                short_names[i] = i;
+                pthread_create(&handles[i], &attr, Relax, &short_names[i]);
+            }
+            // join with threads when they're done
+            for (int i = 0; i < num_threads; ++i) {
+                pthread_join(handles[i], NULL);
+            }
+            __itt_pause();
         }
 
-        __itt_pause();
         // --------------------------------------------------
         clock_gettime(CLOCK_MONOTONIC_RAW, &tock);
-        execTime = 1000000000 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec;
+        execTime = (1000000000.0 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec) / double(NUM_TRIALS);
         std::cout << "elapsed process CPU time = " << (long long unsigned int)execTime << " nanoseconds\n";
         result_filename << filename << "_parallel.txt";
 
@@ -141,22 +146,24 @@ int main(int argc, char* argv[]) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
         // ---------------- experiment below ----------------
 
-        for (graph::node_t u = g.begin(); u < g.end(); u++) {
-            graph::edge_data_t dist = distance[u];
-            for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
-                graph::node_t v = g.get_edge_dst(e);
-                graph::edge_data_t w = g.get_edge_data(e);
-                // take care of cases with infinity
-                graph::edge_data_t updated = dist + w;
-                if (dist != INF && distance[v] > updated) {
-                    distance[v] = updated;
+        for (int t = 0; t < NUM_TRIALS; ++t) {
+            for (graph::node_t u = g.begin(); u < g.end(); u++) {
+                graph::edge_data_t dist = distance[u];
+                for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
+                    graph::node_t v = g.get_edge_dst(e);
+                    graph::edge_data_t w = g.get_edge_data(e);
+                    // take care of cases with infinity
+                    graph::edge_data_t updated = dist + w;
+                    if (dist != INF && distance[v] > updated) {
+                        distance[v] = updated;
+                    }
                 }
             }
         }
 
         // --------------------------------------------------
         clock_gettime(CLOCK_MONOTONIC_RAW, &tock);
-        execTime = 1000000000 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec;
+        execTime = (1000000000.0 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec) / double(NUM_TRIALS);
         std::cout << "elapsed process CPU time = " << (long long unsigned int)execTime << " nanoseconds\n";
         result_filename << filename << ".txt";
 

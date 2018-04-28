@@ -7,19 +7,10 @@
 #include <atomic>
 
 #include <time.h>
-#include <pthread.h>
 
 #include "ittnotify.h" // for VTune
 
 #include "../include/graph.h"
-
-#define MAX_THREADS 512
-#define BUFF_SIZE 100000
-#define INF std::numeric_limits<int>::max()
-
-int num_threads = 0;
-pthread_t handles[MAX_THREADS];
-int short_names[MAX_THREADS];
 
 // initialize the graph in main
 graph g;
@@ -64,10 +55,11 @@ void* Relax(void *thread_id_ptr) {
 
 int main(int argc, char* argv[]) {
     __itt_pause();
-    
+
     std::string filename;               // graph file name
     graph::node_t src;                  // source node ID
     bool parallel = false;              // run in parallel if true
+
     std::ofstream f;                    // result text file
     std::ostringstream result_filename; // result text file name
 

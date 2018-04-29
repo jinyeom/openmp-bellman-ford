@@ -8,13 +8,15 @@
 
 #include <time.h>
 
-#include "ittnotify.h" // for VTune
-
 #include "../include/graph.h"
 
 #define NUM_TRIALS 5
+#define BUFF_SIZE 100000
+#define INF std::numeric_limits<int>::max()
 
-// initialize the graph in main
+int num_threads = 0;
+
+// NOTE: initialize the graph in main
 graph g;
 
 // NOTE: declare the global array with a buffer; if the argument graph has more nodes than the
@@ -25,6 +27,7 @@ void Usage(char *prog) {
     std::cout << "usage: " << prog << " -f filename -s src_id [-p num_threads]" << std::endl;
 }
 
+// update distance between two nodes given the current weight using a CAS operation
 void UpdateDistance(const graph::node_t& u, const graph::node_t& v, const graph::edge_data_t& w) {
     bool done = false;
     while (!done) {
@@ -39,24 +42,8 @@ void UpdateDistance(const graph::node_t& u, const graph::node_t& v, const graph:
     }
 }
 
-void* Relax(void *thread_id_ptr) {
-    graph::node_t tid = *(graph::node_t*)thread_id_ptr;
-    for (graph::node_t u = tid; u < g.end(); u += num_threads) {
-    	for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
-    	    graph::node_t v = g.get_edge_dst(e);
-    	    graph::edge_data_t w = g.get_edge_data(e);
-
-    	    // ---------------- critical section ----------------
-
-            UpdateDistance(u, v, w);
-
-    	    // --------------------------------------------------
-    	}
-    }
-}
-
 int main(int argc, char* argv[]) {
-    __itt_pause();
+    // __itt_pause();
 
     std::string filename;               // graph file name
     graph::node_t src;                  // source node ID
@@ -65,11 +52,8 @@ int main(int argc, char* argv[]) {
     std::ofstream f;                    // result text file
     std::ostringstream result_filename; // result text file name
 
-    double execTime;                    // time in nanoseconds
+    double execTime = 0.0;              // time in nanoseconds
     struct timespec tick, tock;         // for measuring runtime
-
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
 
     // parse program arguments
     for (int i = 0; i < argc; ++i) {
@@ -97,73 +81,69 @@ int main(int argc, char* argv[]) {
         delete [] distance;
         distance = new std::atomic<graph::edge_data_t>[num_nodes];
     }
-
     for (int i = 0; i < num_nodes; ++i) {
         distance[i] = INF;
     }
     distance[src - 1] = 0;
 
-    // repeat relaxation
     if (parallel) {
-        std::cout << "solving SSSP from node " << (int)src << " via parallel Bellman-Ford algorithm..." << std::endl;
-        // main computation for SSSP; measure runtime here
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
-        // ---------------- experiment below ----------------
 
-        // try multiple times and get the average runtime
-        for (int t = 0; t < NUM_TRIALS; ++t) {
-            __itt_resume(); // for VTune
-            // this loop has to stay serial
-            for (int i = 0; i < num_threads; ++i) {
-                // create threads 0, 1, 2, ..., numThreads (round robin)
-                short_names[i] = i;
-                pthread_create(&handles[i], &attr, Relax, &short_names[i]);
-            }
-            // join with threads when they're done
-            for (int i = 0; i < num_threads; ++i) {
-                pthread_join(handles[i], NULL);
-            }
-            __itt_pause();
-        }
+        // Throw an error (temporary)
+        // TODO: implement
+        std::cerr << "OpenMP parallel version not implemented" << std::endl;
+        return -1;
 
-        // --------------------------------------------------
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tock);
-        execTime = (1000000000.0 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec) / double(NUM_TRIALS);
-        std::cout << "elapsed process CPU time = " << (long long unsigned int)execTime << " nanoseconds\n";
-        result_filename << filename << "_parallel.txt";
+        // // OpenMP parallel implementaion
+        // std::cout << "solving SSSP from node " << (int)src << " via parallel Bellman-Ford algorithm..." << std::endl;
+        //
+        // // main computation for SSSP; measure runtime here
+        // clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
+        // // ---------------- experiment below ----------------
+        //
+        // // try multiple times and get the average runtime
+        // for (int t = 0; t < NUM_TRIALS; ++t) {
+        //
+        // }
+        //
+        // // --------------------------------------------------
+        // clock_gettime(CLOCK_MONOTONIC_RAW, &tock);
+        // execTime = (1000000000.0 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec) / double(NUM_TRIALS);
+        // std::cout << "average elapsed process CPU time = " << (long long unsigned int)execTime << " nanoseconds\n";
+        // result_filename << filename << "_parallel.txt";
+        //
+        // // export result to a text file
+        // f.open(result_filename.str());
+        // for (int i = 0; i < num_nodes; ++i) {
+        //     std::string dist_str = std::to_string(distance[i]);
+        //     if (distance[i] == INF) dist_str = "INF";
+        //     f << i + 1 << " " << dist_str << std::endl;
+        // }
+        // f.close();
 
-        // export result to a text file
-        f.open(result_filename.str());
-        for (int i = 0; i < num_nodes; ++i) {
-            std::string dist_str = std::to_string(distance[i]);
-            if (distance[i] == INF) dist_str = "INF";
-            f << i + 1 << " " << dist_str << std::endl;
-        }
-        f.close();
     } else {
-        std::cout << "solving SSSP from node " << (int)src << " via serial Bellman-Ford algorithm..." << std::endl;
-        // main computation for SSSP; measure runtime here
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
-        // ---------------- experiment below ----------------
+        // serial implementation
+        std::cout << "Solving SSSP from node " << (int)src << " via serial Bellman-Ford algorithm..." << std::endl;
 
         for (int t = 0; t < NUM_TRIALS; ++t) {
+            // main computation for SSSP; measure runtime here
+            // NOTE: probably should flush cache every run here...
+            clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
+            // ---------------- experiment below ----------------
+
             for (graph::node_t u = g.begin(); u < g.end(); u++) {
                 graph::edge_data_t dist = distance[u];
                 for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
                     graph::node_t v = g.get_edge_dst(e);
                     graph::edge_data_t w = g.get_edge_data(e);
-                    // take care of cases with infinity
-                    graph::edge_data_t updated = dist + w;
-                    if (dist != INF && distance[v] > updated) {
-                        distance[v] = updated;
-                    }
+                    UpdateDistance(u, v, w);
                 }
             }
-        }
 
-        // --------------------------------------------------
-        clock_gettime(CLOCK_MONOTONIC_RAW, &tock);
-        execTime = (1000000000.0 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec) / double(NUM_TRIALS);
+            // --------------------------------------------------
+            clock_gettime(CLOCK_MONOTONIC_RAW, &tock);
+            execTime += 1000000000.0 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec;
+        }
+        execTime = execTime / (double)NUM_TRIALS;
         std::cout << "elapsed process CPU time = " << (long long unsigned int)execTime << " nanoseconds\n";
         result_filename << filename << ".txt";
 

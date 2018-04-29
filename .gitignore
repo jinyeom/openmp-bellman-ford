@@ -1,0 +1,5 @@
+*.swp
+*.o
+*.dimacs
+*.dimacs.txt
+bellman-ford

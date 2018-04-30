@@ -7,6 +7,7 @@
 #include <atomic>
 
 #include <time.h>
+#include <omp.h>
 
 #include "../include/graph.h"
 
@@ -52,9 +53,6 @@ int main(int argc, char* argv[]) {
     std::ofstream f;                    // result text file
     std::ostringstream result_filename; // result text file name
 
-    double execTime = 0.0;              // time in nanoseconds
-    struct timespec tick, tock;         // for measuring runtime
-
     // parse program arguments
     for (int i = 0; i < argc; ++i) {
         if (!strcmp(argv[i], "-f")) {
@@ -87,15 +85,37 @@ int main(int argc, char* argv[]) {
     distance[src - 1] = 0;
 
     if (parallel) {
+        // OpenMP parallel implementaion
+        std::cout << "solving SSSP from node " << (int)src << " via parallel Bellman-Ford algorithm..." << std::endl;
 
-        // Throw an error (temporary)
-        // TODO: implement
-        std::cerr << "OpenMP parallel version not implemented" << std::endl;
-        return -1;
+        double execTime = 0.0; // time in nanoseconds
+        double tick, tock; // in seconds
 
-        // // OpenMP parallel implementaion
-        // std::cout << "solving SSSP from node " << (int)src << " via parallel Bellman-Ford algorithm..." << std::endl;
-        //
+        omp_set_num_threads(num_threads);
+        for (int t = 0; t < NUM_TRIALS; ++t) {
+
+            #pragma omp parallel
+            {
+                tick = omp_get_wtime();
+                // ---------------- experiment below ----------------
+
+                for (graph::node_t u = g.begin(); u < g.end(); u++) {
+                    graph::edge_data_t dist = distance[u];
+                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
+                        graph::node_t v = g.get_edge_dst(e);
+                        graph::edge_data_t w = g.get_edge_data(e);
+                        UpdateDistance(u, v, w);
+                    }
+                }
+                // --------------------------------------------------
+                tock = omp_get_wtime();
+                execTime += 1000000000.0 * (tock - tick);
+            }
+        }
+        execTime = execTime / (double)NUM_TRIALS;
+        std::cout << "elapsed process CPU time = " << execTime << " nanoseconds\n";
+        result_filename << "parallel_" << filename << ".txt";
+
         // // main computation for SSSP; measure runtime here
         // clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
         // // ---------------- experiment below ----------------
@@ -123,6 +143,9 @@ int main(int argc, char* argv[]) {
     } else {
         // serial implementation
         std::cout << "Solving SSSP from node " << (int)src << " via serial Bellman-Ford algorithm..." << std::endl;
+
+        double execTime = 0.0; // time in nanoseconds
+        struct timespec tick, tock;
 
         for (int t = 0; t < NUM_TRIALS; ++t) {
             // main computation for SSSP; measure runtime here

@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 
     if (parallel) {
         // OpenMP parallel implementaion
-        std::cout << "solving SSSP from node " << (int)src << " via parallel Bellman-Ford algorithm..." << std::endl;
+        std::cout << "solving SSSP from node " << (int)src << " via parallel (" << num_threads << ") Bellman-Ford algorithm..." << std::endl;
 
         double execTime = 0.0; // time in nanoseconds
         double tick, tock; // in seconds
@@ -119,29 +119,14 @@ int main(int argc, char* argv[]) {
         std::cout << "elapsed process CPU time = " << execTime << " nanoseconds\n";
         result_filename << "parallel_" << filename << ".txt";
 
-        // // main computation for SSSP; measure runtime here
-        // clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
-        // // ---------------- experiment below ----------------
-        //
-        // // try multiple times and get the average runtime
-        // for (int t = 0; t < NUM_TRIALS; ++t) {
-        //
-        // }
-        //
-        // // --------------------------------------------------
-        // clock_gettime(CLOCK_MONOTONIC_RAW, &tock);
-        // execTime = (1000000000.0 * (tock.tv_sec - tick.tv_sec) + tock.tv_nsec - tick.tv_nsec) / double(NUM_TRIALS);
-        // std::cout << "average elapsed process CPU time = " << (long long unsigned int)execTime << " nanoseconds\n";
-        // result_filename << filename << "_parallel.txt";
-        //
-        // // export result to a text file
-        // f.open(result_filename.str());
-        // for (int i = 0; i < num_nodes; ++i) {
-        //     std::string dist_str = std::to_string(distance[i]);
-        //     if (distance[i] == INF) dist_str = "INF";
-        //     f << i + 1 << " " << dist_str << std::endl;
-        // }
-        // f.close();
+        // export result to a text file
+        f.open(result_filename.str());
+        for (int i = 0; i < num_nodes; ++i) {
+            std::string dist_str = std::to_string(distance[i]);
+            if (distance[i] == INF) dist_str = "INF";
+            f << i + 1 << " " << dist_str << std::endl;
+        }
+        f.close();
 
     } else {
         // serial implementation

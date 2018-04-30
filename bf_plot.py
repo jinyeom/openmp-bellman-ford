@@ -9,6 +9,7 @@ def plot_nthreads_time(prog, filename, src, title, show=False, save=False):
     runtimes = []
     speedups = []
 
+    # first get the runtime of serial implementation
     print("Running {} on {} in serial...".format(prog, filename), flush=True, end="")
     result = subprocess.run([prog, "-f", filename, "-s", src], stdout=subprocess.PIPE).stdout.decode("utf-8")
     print("\x1B[32mdone\x1B[0m")

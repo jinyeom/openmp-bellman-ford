@@ -94,23 +94,26 @@ int main(int argc, char* argv[]) {
         omp_set_num_threads(num_threads);
         for (int t = 0; t < NUM_TRIALS; ++t) {
 
-            #pragma omp parallel
-            {
-                tick = omp_get_wtime();
-                // ---------------- experiment below ----------------
+            #pragma omp parallel for schedule(static, 1)
+                for (int i = 0; i < num_threads; ++i) {
+                    int id = omp_get_thread_num();
 
-                for (graph::node_t u = g.begin(); u < g.end(); u++) {
-                    graph::edge_data_t dist = distance[u];
-                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
-                        graph::node_t v = g.get_edge_dst(e);
-                        graph::edge_data_t w = g.get_edge_data(e);
-                        UpdateDistance(u, v, w);
+                    tick = omp_get_wtime();
+                    // ---------------- experiment below ----------------
+
+                    // round robin
+                    for (graph::node_t u = id; u < g.end(); u += num_threads) {
+                        graph::edge_data_t dist = distance[u];
+                        for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
+                            graph::node_t v = g.get_edge_dst(e);
+                            graph::edge_data_t w = g.get_edge_data(e);
+                            UpdateDistance(u, v, w);
+                        }
                     }
+                    // --------------------------------------------------
+                    tock = omp_get_wtime();
+                    execTime += 1000000000.0 * (tock - tick);
                 }
-                // --------------------------------------------------
-                tock = omp_get_wtime();
-                execTime += 1000000000.0 * (tock - tick);
-            }
         }
         execTime = execTime / (double)NUM_TRIALS;
         std::cout << "elapsed process CPU time = " << execTime << " nanoseconds\n";
@@ -153,9 +156,9 @@ int main(int argc, char* argv[]) {
             clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
             // ---------------- experiment below ----------------
 
-            for (graph::node_t u = g.begin(); u < g.end(); u++) {
+            for (graph::node_t u = g.begin(); u < g.end(); ++u) {
                 graph::edge_data_t dist = distance[u];
-                for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
+                for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
                     graph::node_t v = g.get_edge_dst(e);
                     graph::edge_data_t w = g.get_edge_data(e);
                     UpdateDistance(u, v, w);

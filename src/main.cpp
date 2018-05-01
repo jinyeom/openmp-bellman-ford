@@ -108,7 +108,6 @@ int main(int argc, char* argv[]) {
                     for (int i = 0; i < num_nodes - 1; ++i) {
 
                         #pragma omp for schedule(static, chunk_size)
-                        {
                             for (int j = 0; j < num_threads; ++j) {
                                 int id = omp_get_thread_num();
                                 for (graph::node_t u = id; u < g.end(); u += num_threads) {
@@ -120,7 +119,6 @@ int main(int argc, char* argv[]) {
                                     }
                                 }
                             }
-                        }
 
                     }
 
@@ -140,7 +138,6 @@ int main(int argc, char* argv[]) {
                     for (int i = 0; i < num_nodes - 1; ++i) {
 
                         #pragma omp for schedule(dynamic, chunk_size)
-                        {
                             for (int j = 0; j < num_threads; ++j) {
                                 int id = omp_get_thread_num();
                                 for (graph::node_t u = id; u < g.end(); u += num_threads) {
@@ -152,7 +149,6 @@ int main(int argc, char* argv[]) {
                                     }
                                 }
                             }
-                        }
 
                     }
 

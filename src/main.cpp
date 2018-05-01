@@ -101,7 +101,14 @@ int main(int argc, char* argv[]) {
             for (int t = 0; t < NUM_TRIALS; ++t) {
                 #pragma omp parallel
                 {
-                    tick = omp_get_wtime();
+                    #pragma omp master
+                    {
+                        int nthreads = omp_get_num_threads();
+                        if (nthreads != num_threads) {
+                            std::cout << "incorrect number of threads: " << nthreads << " != " << num_threads << std::endl;
+                        }
+                        tick = omp_get_wtime();
+                    }
                     // ---------------- experiment below ----------------
 
                     // this part of the algorithm must be sequential
@@ -123,15 +130,25 @@ int main(int argc, char* argv[]) {
                     }
 
                     // --------------------------------------------------
-                    tock = omp_get_wtime();
-                    execTime += 1000000000.0 * (tock - tick);
+                    #pragma omp master
+                    {
+                        tock = omp_get_wtime();
+                        execTime += 1000000000.0 * (tock - tick);
+                    }
                 }
             }
         } else if (clause == "dynamic") {
             for (int t = 0; t < NUM_TRIALS; ++t) {
                 #pragma omp parallel
                 {
-                    tick = omp_get_wtime();
+                    #pragma omp master
+                    {
+                        int nthreads = omp_get_num_threads();
+                        if (nthreads != num_threads) {
+                            std::cout << "incorrect number of threads: " << nthreads << " != " << num_threads << std::endl;
+                        }
+                        tick = omp_get_wtime();
+                    }
                     // ---------------- experiment below ----------------
 
                     // this part of the algorithm must be sequential
@@ -153,8 +170,11 @@ int main(int argc, char* argv[]) {
                     }
 
                     // --------------------------------------------------
-                    tock = omp_get_wtime();
-                    execTime += 1000000000.0 * (tock - tick);
+                    #pragma omp master
+                    {
+                        tock = omp_get_wtime();
+                        execTime += 1000000000.0 * (tock - tick);
+                    }
                 }
             }
         }

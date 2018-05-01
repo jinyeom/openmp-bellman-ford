@@ -15,8 +15,6 @@
 #define BUFF_SIZE 100000
 #define INF std::numeric_limits<int>::max()
 
-int num_threads = 0;
-
 // NOTE: initialize the graph in main
 graph g;
 
@@ -49,6 +47,9 @@ int main(int argc, char* argv[]) {
     std::string filename;               // graph file name
     graph::node_t src;                  // source node ID
     bool parallel = false;              // run in parallel if true
+    int num_threads = 0;                // number of threads
+    std::string clause;                 // schedule clause (either static or dynamic)
+    int chunk_size = 0;                 // chunk size for scheduling
 
     std::ofstream f;                    // result text file
     std::ostringstream result_filename; // result text file name
@@ -63,9 +64,11 @@ int main(int argc, char* argv[]) {
         } else if (!strcmp(argv[i], "-p")) {
             parallel = true;
             num_threads = std::stoi(argv[++i]);
+            clause = argv[++i];
+            chunk_size = std::stoi(argv[++i]);
         }
     }
-    if (filename.empty() || (parallel && num_threads == 0)) {
+    if (filename.empty() || (parallel && num_threads == 0 && clause.empty() && chunk_size == 0)) {
         Usage(argv[0]);
         return -1;
     }
@@ -91,29 +94,73 @@ int main(int argc, char* argv[]) {
         double execTime = 0.0; // time in nanoseconds
         double tick, tock; // in seconds
 
+        // set the number of threads for OpenMP
         omp_set_num_threads(num_threads);
-        for (int t = 0; t < NUM_TRIALS; ++t) {
 
-            #pragma omp parallel for schedule(static, 1)
-                for (int i = 0; i < num_threads; ++i) {
-                    int id = omp_get_thread_num();
-
+        if (clause == "static") {
+            for (int t = 0; t < NUM_TRIALS; ++t) {
+                #pragma omp parallel
+                {
                     tick = omp_get_wtime();
                     // ---------------- experiment below ----------------
 
-                    // round robin
-                    for (graph::node_t u = id; u < g.end(); u += num_threads) {
-                        graph::edge_data_t dist = distance[u];
-                        for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
-                            graph::node_t v = g.get_edge_dst(e);
-                            graph::edge_data_t w = g.get_edge_data(e);
-                            UpdateDistance(u, v, w);
+                    // this part of the algorithm must be sequential
+                    for (int i = 0; i < num_nodes - 1; ++i) {
+
+                        #pragma omp for schedule(static, chunk_size)
+                        {
+                            for (int j = 0; j < num_threads; ++j) {
+                                int id = omp_get_thread_num();
+                                for (graph::node_t u = id; u < g.end(); u += num_threads) {
+                                    graph::edge_data_t dist = distance[u];
+                                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
+                                        graph::node_t v = g.get_edge_dst(e);
+                                        graph::edge_data_t w = g.get_edge_data(e);
+                                        UpdateDistance(u, v, w);
+                                    }
+                                }
+                            }
                         }
+
                     }
+
                     // --------------------------------------------------
                     tock = omp_get_wtime();
                     execTime += 1000000000.0 * (tock - tick);
                 }
+            }
+        } else if (clause == "dynamic") {
+            for (int t = 0; t < NUM_TRIALS; ++t) {
+                #pragma omp parallel
+                {
+                    tick = omp_get_wtime();
+                    // ---------------- experiment below ----------------
+
+                    // this part of the algorithm must be sequential
+                    for (int i = 0; i < num_nodes - 1; ++i) {
+
+                        #pragma omp for schedule(dynamic, chunk_size)
+                        {
+                            for (int j = 0; j < num_threads; ++j) {
+                                int id = omp_get_thread_num();
+                                for (graph::node_t u = id; u < g.end(); u += num_threads) {
+                                    graph::edge_data_t dist = distance[u];
+                                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
+                                        graph::node_t v = g.get_edge_dst(e);
+                                        graph::edge_data_t w = g.get_edge_data(e);
+                                        UpdateDistance(u, v, w);
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+
+                    // --------------------------------------------------
+                    tock = omp_get_wtime();
+                    execTime += 1000000000.0 * (tock - tick);
+                }
+            }
         }
         execTime = execTime / (double)NUM_TRIALS;
         std::cout << "elapsed process CPU time = " << execTime << " nanoseconds\n";
@@ -141,12 +188,14 @@ int main(int argc, char* argv[]) {
             clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
             // ---------------- experiment below ----------------
 
-            for (graph::node_t u = g.begin(); u < g.end(); ++u) {
-                graph::edge_data_t dist = distance[u];
-                for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
-                    graph::node_t v = g.get_edge_dst(e);
-                    graph::edge_data_t w = g.get_edge_data(e);
-                    UpdateDistance(u, v, w);
+            for (int i = 0; i < num_nodes - 1; ++i) { // until it converges
+                for (graph::node_t u = g.begin(); u < g.end(); ++u) {
+                    graph::edge_data_t dist = distance[u];
+                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
+                        graph::node_t v = g.get_edge_dst(e);
+                        graph::edge_data_t w = g.get_edge_data(e);
+                        UpdateDistance(u, v, w);
+                    }
                 }
             }
 

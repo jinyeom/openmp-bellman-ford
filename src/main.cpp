@@ -111,23 +111,15 @@ int main(int argc, char* argv[]) {
                     }
                     // ---------------- experiment below ----------------
 
-                    // this part of the algorithm must be sequential
-                    for (int i = 0; i < num_nodes - 1; ++i) {
-
-                        #pragma omp for schedule(static, chunk_size)
-                            for (int j = 0; j < num_threads; ++j) {
-                                int id = omp_get_thread_num();
-                                for (graph::node_t u = id; u < g.end(); u += num_threads) {
-                                    graph::edge_data_t dist = distance[u];
-                                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
-                                        graph::node_t v = g.get_edge_dst(e);
-                                        graph::edge_data_t w = g.get_edge_data(e);
-                                        UpdateDistance(u, v, w);
-                                    }
-                                }
+                    #pragma omp for schedule(static, chunk_size)
+                        for (graph::node_t u = g.begin(); u < g.end(); ++u) {
+                            graph::edge_data_t dist = distance[u];
+                            for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
+                                graph::node_t v = g.get_edge_dst(e);
+                                graph::edge_data_t w = g.get_edge_data(e);
+                                UpdateDistance(u, v, w);
                             }
-
-                    }
+                        }
 
                     // --------------------------------------------------
                     #pragma omp master
@@ -151,23 +143,15 @@ int main(int argc, char* argv[]) {
                     }
                     // ---------------- experiment below ----------------
 
-                    // this part of the algorithm must be sequential
-                    for (int i = 0; i < num_nodes - 1; ++i) {
-
-                        #pragma omp for schedule(dynamic, chunk_size)
-                            for (int j = 0; j < num_threads; ++j) {
-                                int id = omp_get_thread_num();
-                                for (graph::node_t u = id; u < g.end(); u += num_threads) {
-                                    graph::edge_data_t dist = distance[u];
-                                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
-                                        graph::node_t v = g.get_edge_dst(e);
-                                        graph::edge_data_t w = g.get_edge_data(e);
-                                        UpdateDistance(u, v, w);
-                                    }
-                                }
+                    #pragma omp for schedule(dynamic, chunk_size)
+                        for (graph::node_t u = g.begin(); u < g.end(); ++u) {
+                            graph::edge_data_t dist = distance[u];
+                            for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
+                                graph::node_t v = g.get_edge_dst(e);
+                                graph::edge_data_t w = g.get_edge_data(e);
+                                UpdateDistance(u, v, w);
                             }
-
-                    }
+                        }
 
                     // --------------------------------------------------
                     #pragma omp master
@@ -204,14 +188,12 @@ int main(int argc, char* argv[]) {
             clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
             // ---------------- experiment below ----------------
 
-            for (int i = 0; i < num_nodes - 1; ++i) { // until it converges
-                for (graph::node_t u = g.begin(); u < g.end(); ++u) {
-                    graph::edge_data_t dist = distance[u];
-                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
-                        graph::node_t v = g.get_edge_dst(e);
-                        graph::edge_data_t w = g.get_edge_data(e);
-                        UpdateDistance(u, v, w);
-                    }
+            for (graph::node_t u = g.begin(); u < g.end(); ++u) {
+                graph::edge_data_t dist = distance[u];
+                for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); ++e) {
+                    graph::node_t v = g.get_edge_dst(e);
+                    graph::edge_data_t w = g.get_edge_data(e);
+                    UpdateDistance(u, v, w);
                 }
             }
 

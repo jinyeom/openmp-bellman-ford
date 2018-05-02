@@ -64,4 +64,20 @@ Saving plot figure...[32mdone[0m
 Saving plot figure...[32mdone[0m
 Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
 Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
-Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (static, 512)...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (static, 512)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 2 thread(s) (static, 512)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 4 thread(s) (static, 512)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 8 thread(s) (static, 512)...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (dynamic, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 2 thread(s) (dynamic, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 4 thread(s) (dynamic, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 8 thread(s) (dynamic, 1)...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (dynamic, 8)...

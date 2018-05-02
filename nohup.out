@@ -1,2 +1,67 @@
 Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
-Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial..../bellman-ford: error while loading shared libraries: libiomp5.so: cannot open shared object file: No such file or directory
+Traceback (most recent call last):
+  File "bf_plot.py", line 69, in <module>
+    omp_schedule_plot("./bellman-ford", "/tmp/jinyeom/rmat15.dimacs", "1", "rmat15", True)
+  File "bf_plot.py", line 13, in omp_schedule_plot
+    plot_nthreads_time(prog, filename, src, title, c, s, save)
+  File "bf_plot.py", line 26, in plot_nthreads_time
+    serial_runtime += float(re.search(r"elapsed process CPU time = (.*) nanoseconds", result).group(1))
+AttributeError: 'NoneType' object has no attribute 'group'
+Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (static, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 2 thread(s) (static, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 4 thread(s) (static, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 8 thread(s) (static, 1)...[32mdone[0m
+Traceback (most recent call last):
+  File "bf_plot.py", line 69, in <module>
+    omp_schedule_plot("./bellman-ford", "/tmp/jinyeom/rmat15.dimacs", "1", "rmat15", True)
+  File "bf_plot.py", line 13, in omp_schedule_plot
+    plot_nthreads_time(prog, filename, src, title, c, s, save)
+  File "bf_plot.py", line 44, in plot_nthreads_time
+    plt.figure()
+  File "/usr/lib/python3/dist-packages/matplotlib/pyplot.py", line 527, in figure
+    **kwargs)
+  File "/usr/lib/python3/dist-packages/matplotlib/backends/backend_tkagg.py", line 84, in new_figure_manager
+    return new_figure_manager_given_figure(num, figure)
+  File "/usr/lib/python3/dist-packages/matplotlib/backends/backend_tkagg.py", line 92, in new_figure_manager_given_figure
+    window = Tk.Tk()
+  File "/usr/lib/python3.5/tkinter/__init__.py", line 1871, in __init__
+    self.tk = _tkinter.create(screenName, baseName, className, interactive, wantobjects, useTk, sync, use)
+_tkinter.TclError: couldn't connect to display "localhost:10.0"
+Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (static, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 2 thread(s) (static, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 4 thread(s) (static, 1)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 8 thread(s) (static, 1)...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (static, 8)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 2 thread(s) (static, 8)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 4 thread(s) (static, 8)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 8 thread(s) (static, 8)...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (static, 32)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 2 thread(s) (static, 32)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 4 thread(s) (static, 32)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 8 thread(s) (static, 32)...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (static, 128)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 2 thread(s) (static, 128)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 4 thread(s) (static, 128)...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 8 thread(s) (static, 128)...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Saving plot figure...[32mdone[0m
+Plotting runtimes and speedups of ./bellman-ford with 1, 2, 4, 8 threads...
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs in serial...[32mdone[0m
+Running ./bellman-ford on /tmp/jinyeom/rmat15.dimacs with 1 thread(s) (static, 512)...

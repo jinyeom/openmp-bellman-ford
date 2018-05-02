@@ -29,7 +29,7 @@ def plot_nthreads_time(prog, filename, src, title, clause, chunk_size, save):
 
     n_threads = [1, 2, 4, 8]
     for n in n_threads:
-        print("Running {} on {} with {} thread(s)...".format(prog, filename, n), flush=True, end="")
+        print("Running {} on {} with {} thread(s) ({}, {})...".format(prog, filename, n, clause, chunk_size), flush=True, end="")
         parallel_runtime = 0.0
         for i in range(5):
             result = subprocess.run([prog, "-f", filename, "-s", src, "-p", str(n)], stdout=subprocess.PIPE).stdout.decode("utf-8")

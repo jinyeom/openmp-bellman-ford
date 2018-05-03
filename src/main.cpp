@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
     std::string filename;               // graph file name
     graph::node_t src;                  // source node ID
     bool parallel = false;              // run in parallel if true
+    bool edges_only = false;            // iterate through edges only
     int num_threads = 0;                // number of threads
 
     std::ofstream f;                    // result text file
@@ -39,6 +40,8 @@ int main(int argc, char* argv[]) {
         } else if (!strcmp(argv[i], "-p")) {
             parallel = true;
             num_threads = std::stoi(argv[++i]);
+        } else if (!strcmp(argv[i], "-e")) {
+            edges_only = true;
         }
     }
     if (filename.empty() || (parallel && num_threads == 0)) {
@@ -69,25 +72,25 @@ int main(int argc, char* argv[]) {
         // set the number of threads for OpenMP
         omp_set_num_threads(num_threads);
 
-        #pragma omp parallel
-        {
-            #pragma omp master
+        if (edges_only) {
+            #pragma omp parallel
             {
-                int nthreads = omp_get_num_threads(); // actual number of threads
-                std::cout << "OpenMP: running " << argv[0] << " with " << nthreads << " threads" << std::endl;
-                tick = omp_get_wtime();
-            }
-            // ---------------- experiment below ----------------
+                #pragma omp master
+                {
+                    int nthreads = omp_get_num_threads(); // actual number of threads
+                    std::cout << "OpenMP: running " << argv[0] << " with " << nthreads << " threads (iterating edges only)" << std::endl;
+                    tick = omp_get_wtime();
+                }
+                // ---------------- experiment below ----------------
 
-	    for (int i = 0; i < num_nodes - 1; ++i) {
-                #pragma omp for schedule(runtime)
-                for (graph::node_t u = g.begin(); u < g.end(); u++) {
-                    graph::edge_data_t dist = distance[u];
-                    for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
+                for (int i = 0; i < num_nodes - 1; ++i) {
+                    #pragma omp for schedule(runtime)
+                    for (int e = 0; e < g.size_edges(); ++e) {
+                        graph::edge_data_t dist = distance[u];
                         graph::node_t v = g.get_edge_dst(e);
                         graph::edge_data_t w = g.get_edge_data(e);
                         graph::edge_data_t updated = dist + w;
-                        
+
                         bool done = false;
                         while (!done) {
                             auto dist_old = distance[v].load();
@@ -101,14 +104,56 @@ int main(int argc, char* argv[]) {
                         }
                     }
                 }
-	    }
 
-            // --------------------------------------------------
-            #pragma omp master
-	    {
-	        tock = omp_get_wtime();
-                execTime = 1000000000.0 * (tock - tick);
-	    }
+                // --------------------------------------------------
+                #pragma omp master
+                {
+                    tock = omp_get_wtime();
+                    execTime = 1000000000.0 * (tock - tick);
+                }
+            }
+        } else {
+            #pragma omp parallel
+            {
+                #pragma omp master
+                {
+                    int nthreads = omp_get_num_threads(); // actual number of threads
+                    std::cout << "OpenMP: running " << argv[0] << " with " << nthreads << " threads" << std::endl;
+                    tick = omp_get_wtime();
+                }
+                // ---------------- experiment below ----------------
+
+                for (int i = 0; i < num_nodes - 1; ++i) {
+                    #pragma omp for schedule(runtime)
+                    for (graph::node_t u = g.begin(); u < g.end(); u++) {
+                        graph::edge_data_t dist = distance[u];
+                        for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
+                            graph::node_t v = g.get_edge_dst(e);
+                            graph::edge_data_t w = g.get_edge_data(e);
+                            graph::edge_data_t updated = dist + w;
+
+                            bool done = false;
+                            while (!done) {
+                                auto dist_old = distance[v].load();
+                                auto distu = distance[u].load();
+                                auto dist_new = distu + w;
+                                if (distu != INF && dist_new < dist_old) {
+                                    done = distance[v].compare_exchange_weak(dist_old, dist_new);
+                                } else {
+                                    done = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // --------------------------------------------------
+                #pragma omp master
+                {
+                    tock = omp_get_wtime();
+                    execTime = 1000000000.0 * (tock - tick);
+                }
+            }
         }
         std::cout << "elapsed process CPU time = " << (long long unsigned int)execTime << " nanoseconds\n";
         result_filename << "parallel_" << filename << ".txt";
@@ -121,7 +166,6 @@ int main(int argc, char* argv[]) {
             f << i + 1 << " " << dist_str << std::endl;
         }
         f.close();
-
     } else {
         // serial implementation
         std::cout << "Solving SSSP from node " << (int)src << " via serial Bellman-Ford algorithm..." << std::endl;
@@ -134,17 +178,17 @@ int main(int argc, char* argv[]) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &tick);
         // ---------------- experiment below ----------------
 
-	// there needs to be at most |V| - 1 relaxation until convergence;
+	    // there needs to be at most |V| - 1 relaxation until convergence;
         // this part of the algorithm cannot be parallelized
-	for (int i = 0; i < num_nodes - 1; ++i) {
+	    for (int i = 0; i < num_nodes - 1; ++i) {
             for (graph::node_t u = g.begin(); u < g.end(); u++) {
                 graph::edge_data_t dist = distance[u];
                 for (graph::edge_t e = g.edge_begin(u); e < g.edge_end(u); e++) {
                     graph::node_t v = g.get_edge_dst(e);
                     graph::edge_data_t w = g.get_edge_data(e);
                     graph::edge_data_t updated = dist + w;
-                    
-		    bool done = false;
+
+		            bool done = false;
                     while (!done) {
                         auto dist_old = distance[v].load();
                         auto distu = distance[u].load();
@@ -157,7 +201,7 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
-	}
+	    }
 
         // --------------------------------------------------
         clock_gettime(CLOCK_MONOTONIC_RAW, &tock);
